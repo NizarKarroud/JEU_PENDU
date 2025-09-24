@@ -13,52 +13,28 @@ typedef struct Player
 
 bool only_letters(const char *s);
 bool verifier_tentative(char guess , char* mot, char* mot_copy);
+char *choisir_mot_mystere();
+int choisir_N_erreurs();
 
 int main(void) {
 
-    char mot[15];
-    char buffer[100];
 
-    int erreurs_max;
-    Player joueur2;
+    Player joueur;
 
 
-    do {
-        printf("Entrer un mot (14 lettres, sans espaces ni chiffres) : ");
-        fgets(mot, sizeof(mot), stdin);
+    char *mot = choisir_mot_mystere();      
+    char *mot_modifiable = malloc(strlen(mot) + 1);
+    strcpy(mot_modifiable, mot);    
+    printf("%s" , mot); 
+    
+    int erreurs_max = choisir_N_erreurs();
+    printf("Vous avez %i tentatives" , erreurs_max);
 
-        if (strlen(mot) == 1 ){
-            continue;
-
-        }
-        mot[strcspn(mot, "\n")] = '\0';
-        if (!only_letters(mot)) {
-            printf("Erreur : le mot doit contenir uniquement des lettres.\n");
-            continue;
-        }
-       
-        break; 
-
-    } while (1);
-
-    do {
-        printf("Entrer le nombre maximal d\'erreurs  : ");
-        
-
-        fgets(buffer, sizeof(buffer), stdin) ;
-
-        erreurs_max = (int)strtol(buffer,NULL,10 );
-        if (erreurs_max == 0 || erreurs_max < strlen(mot)) {
-            printf("Erreur entrer un nombre positif supérieur ou égale à la longueur du mot.\n");
-            continue;
-        }
-        joueur2.tentative = erreurs_max;
-        break;
-
-    } while (1);
+    joueur.tentative = erreurs_max;
 
 
-    joueur2.incorrect_guesses = malloc(erreurs_max * sizeof(char));
+
+    joueur.incorrect_guesses = malloc(erreurs_max * sizeof(char));
 
     int size = strlen(mot);
     char *mot_copy = malloc((size + 1) * sizeof(char));
@@ -67,10 +43,10 @@ int main(void) {
 
     printf("%s\n" , mot_copy);
 
-    while (joueur2.tentative > 0 && strchr(mot_copy , '-') !=NULL ) {
+    while (joueur.tentative > 0 && strchr(mot_copy , '-') !=NULL ) {
         char guess;
         scanf(" %c", &guess);  
-        joueur2.tentative--;
+        joueur.tentative--;
         verifier_tentative(guess , mot, mot_copy);
         printf("%s\n" , mot_copy);
 
@@ -79,7 +55,7 @@ int main(void) {
 
 
     free(mot_copy);
-    free(joueur2.incorrect_guesses);
+    free(joueur.incorrect_guesses);
 }
 
 int afficher_progression(Player player){
@@ -111,4 +87,23 @@ bool only_letters(const char *s) {
             return false ;
     }
     return true;
+}
+
+char *choisir_mot_mystere(){
+
+    char* liste_mots[] = { "bonjour", "maison", "papillon", "artisan",
+    "ruelle", "ordinateur", "chocolat", "fromage", "jardin", "etoile",
+    "nuages", "cyclone", "robotique", "escargot", "chameau", "probleme",
+    "terrasse", "bonsoir", "biscuit", "catastrophe" } ;
+
+    int random_int = rand() % (sizeof(liste_mots) / sizeof(liste_mots[0]));
+
+    return liste_mots[random_int];
+}
+
+
+int choisir_N_erreurs() {
+
+    return rand() % 20;
+
 }
