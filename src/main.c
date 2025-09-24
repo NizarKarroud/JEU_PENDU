@@ -20,7 +20,7 @@ int main(void) {
 
     int erreurs_max;
     Player joueur2;
-    joueur2.incorrect_guesses[erreurs_max] ;
+    joueur2.incorrect_guesses = malloc(erreurs_max * sizeof(char));
 
 
     do {
