@@ -1,11 +1,18 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <time.h>
+#include <stdlib.h>
+// #include <glib.h>
 
 #define MAX_UNIQUE 256
 #define N 3
 int main() {
+    srand(time(NULL));
     char list[N][20] = {"apple", "banana", "cherry"};
+    int random_index = rand() % N ;
+    char *random_word = list[random_index];
+    printf("%s" , random_word);
     char prepend_char = '0';
     float prob_matrix[MAX_UNIQUE][MAX_UNIQUE];
     float freq_matrix[MAX_UNIQUE][MAX_UNIQUE];
@@ -14,6 +21,24 @@ int main() {
     memset(prob_matrix, 0, sizeof(prob_matrix));
     memset(freq_matrix, 0, sizeof(freq_matrix));
     memset(char_freq, 0, sizeof(char_freq));
+
+    printf("\n");
+    printf("\n");
+
+    printf("     ▄█    ▄████████ ███    █▄       ████████▄  ███    █▄          ▄███████▄    ▄████████ ███▄▄▄▄   ████████▄  ███    █▄  \n");
+    printf("    ███   ███    ███ ███    ███      ███   ▀███ ███    ███        ███    ███   ███    ███ ███▀▀▀██▄ ███   ▀███ ███    ███ \n");
+    printf("    ███   ███    █▀  ███    ███      ███    ███ ███    ███        ███    ███   ███    █▀  ███   ███ ███    ███ ███    ███ \n");
+    printf("    ███  ▄███▄▄▄     ███    ███      ███    ███ ███    ███        ███    ███  ▄███▄▄▄     ███   ███ ███    ███ ███    ███ \n");
+    printf("    ███ ▀▀███▀▀▀     ███    ███      ███    ███ ███    ███      ▀█████████▀  ▀▀███▀▀▀     ███   ███ ███    ███ ███    ███ \n");
+    printf("    ███   ███    █▄  ███    ███      ███    ███ ███    ███        ███          ███    █▄  ███   ███ ███    ███ ███    ███ \n");
+    printf("    ███   ███    ███ ███    ███      ███   ▄███ ███    ███        ███          ███    ███ ███   ███ ███   ▄███ ███    ███ \n");
+    printf("█▄ ▄███   ██████████ ████████▀       ████████▀  ████████▀        ▄████▀        ██████████  ▀█   █▀  ████████▀  ████████▀  \n");
+    printf("▀▀▀▀▀▀                                                                                                                     \n");
+
+    printf("\n");
+
+
+
 
     for (int i = 0; i < 3; i++) {
         char temp[20];              
@@ -50,7 +75,10 @@ int main() {
         }
     }
 
-    // to find the first char , lets check the probabilities of 
+    // to find the first char , lets check the probabilities of chars followed by 
+
+
+
 
 
     return 0;
