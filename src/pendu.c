@@ -18,6 +18,9 @@ void prepare_list(char list[][20], int size);
 bool verifier_tentative(char *mot_mystere , char guess , int index);
 int compare_func(const void *a, const void *b) ;
 
+void compute_frequencies(char list[][20], int size, float freq_matrix[MAX_UNIQUE][MAX_UNIQUE], int char_freq[MAX_UNIQUE]);
+void compute_probabilities(float freq_matrix[MAX_UNIQUE][MAX_UNIQUE], int char_freq[MAX_UNIQUE], float prob_matrix[MAX_UNIQUE][MAX_UNIQUE]);
+
 int main() {
 
     srand(time(NULL));
@@ -45,31 +48,8 @@ int main() {
     prepare_list(list,N );
 
 
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < strlen(list[i]); j++) {
-            char c = list[i][j];
-            char_freq[c] ++ ;
-            char next_char = list[i][j+1];
-            if (j + 1 < strlen(list[i])) {
-                char next_char = list[i][j + 1];
-                freq_matrix[c][next_char]++;
-                
-                // printf("%c followed by : %c , %f times \n" , c, next_char, freq_matrix[c][next_char]) ;
-            }
-
-        }
-    }
-
-    for (int i = 0; i < MAX_UNIQUE; i++) {
-        for (int j = 0; j < MAX_UNIQUE ; j++) {
-        
-            if (freq_matrix[i][j] != 0 && char_freq[i] != 0 ){
-                prob_matrix[i][j] = freq_matrix[i][j] / (float)char_freq[i];
-            }
-
-
-        }
-    }
+    compute_frequencies(list, N, freq_matrix, char_freq);
+    compute_probabilities(freq_matrix, char_freq, prob_matrix);
 
 
     for (int i = 0; i < MAX_UNIQUE; i++) {
@@ -106,6 +86,36 @@ int main() {
             //         i,
             //         list_of_prob_for_given_char[j].lettre,
             //         list_of_prob_for_given_char[j].probability);
+
+
+void compute_frequencies(char list[][20], int size, float freq_matrix[MAX_UNIQUE][MAX_UNIQUE], int char_freq[MAX_UNIQUE]) {
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < strlen(list[i]); j++) {
+            char c = list[i][j];
+            char_freq[c]++;
+            if (j + 1 < strlen(list[i])) {
+                char next_char = list[i][j + 1];
+                freq_matrix[c][next_char]++;
+            }
+        }
+    }
+}
+
+void compute_probabilities(float freq_matrix[MAX_UNIQUE][MAX_UNIQUE], int char_freq[MAX_UNIQUE], float prob_matrix[MAX_UNIQUE][MAX_UNIQUE]) {
+    for (int i = 0; i < MAX_UNIQUE; i++) {
+        for (int j = 0; j < MAX_UNIQUE; j++) {
+            if (freq_matrix[i][j] != 0 && char_freq[i] != 0) {
+                prob_matrix[i][j] = freq_matrix[i][j] / (float)char_freq[i];
+            }
+        }
+    }
+}
+
+
+
+
+
+
 int compare_func(const void *a, const void *b) {
     Tuple *pa = (Tuple *)a;
     Tuple *pb = (Tuple *)b;
