@@ -24,11 +24,12 @@ void print_tree(Node *node, int depth) ;
 void free_tree(Node *node);
 void print_banner(void);
 int compare_root_nodes(const void *a, const void *b) ;
-Node *guess_first_node(Node **roots_copy, int num_roots , char *random_word , char *mot_copy);
+Node *guess_first_node(Node **roots_copy, int num_roots , char *random_word , char *mot_copy , int *tentative);
 
-void guess_rest(Node *current_node , char *random_word , char *mot_copy , int index );
+void guess_rest(Node *current_node , char *random_word , char *mot_copy , int index ,  int *tentative);
 
 int main() {
+
     char *list[] = {
         "apple", "banana", "cherry", "grapes", "orange",
         "tiger", "elephant", "sparrow", "dolphin", "lizard",
@@ -41,6 +42,7 @@ int main() {
         "sunrise", "thunder", "hurricane", "avalanche", "volcano",
         "justice", "truth", "illusion", "destiny", "silence"
     };
+    
     int N = sizeof(list) / sizeof(list[0]);
     srand(time(NULL));
 
@@ -55,6 +57,8 @@ int main() {
     MarkovTree tree = {0, NULL};
 
     print_banner();
+
+    printf("Nombre de tentatives : %d\n" , nombre_tentative);
 
     for (int i = 0; i < N; i++) {
         insert_word(&tree, list[i]);
@@ -72,9 +76,9 @@ int main() {
     
     printf("\nGuessing the word .... \n");
     
-    Node *first_node =  guess_first_node(roots_copy, tree.num_roots , random_word , mot_copy);
+    Node *first_node =  guess_first_node(roots_copy, tree.num_roots , random_word , mot_copy , &nombre_tentative);
     free(roots_copy);
-    guess_rest(first_node, random_word , mot_copy ,1 );
+    guess_rest(first_node, random_word , mot_copy ,1 ,  &nombre_tentative);
    
     // printf("=== Markov Tree ===\n");
     // for (int i = 0; i < tree.num_roots; i++) {
@@ -208,8 +212,15 @@ void print_banner(void){
 
 }
 
-Node *guess_first_node(Node **roots_copy, int num_roots , char *random_word , char *mot_copy){
+Node *guess_first_node(Node **roots_copy, int num_roots , char *random_word , char *mot_copy , int *tentative){
+
     for (int i = 0; i < num_roots; i++) {
+        if (*tentative ==0)
+        {
+            printf("GAME OVER (PLUS DE TENTATIVES RESTANTES)\n");
+            exit(0);
+
+        }   
         if (roots_copy[i]->letter == random_word[0]){
             mot_copy[0] = roots_copy[i]->letter;
 
@@ -218,14 +229,16 @@ Node *guess_first_node(Node **roots_copy, int num_roots , char *random_word , ch
         }
         else {
             printf("Incorrect guess (%c) the current word is : %s\n" , roots_copy[i]->letter , mot_copy);
+            *tentative = *tentative - 1;
         }
     }
 }
 
 
-void guess_rest(Node *current_node , char *random_word , char *mot_copy , int index ){
+void guess_rest(Node *current_node , char *random_word , char *mot_copy , int index ,  int *tentative){
 
     if(current_node->num_children ==0){
+        printf("YOU FOUND THE WORD WITH %i ATTEMPTS LEFT : %s \n" ,*tentative, random_word);
         return ;  // c'est la fin du mot
     }
 
@@ -235,13 +248,23 @@ void guess_rest(Node *current_node , char *random_word , char *mot_copy , int in
     qsort(children_array_copy, current_node->num_children, sizeof(Node*), compare_root_nodes);
 
     for (int i= 0 ; i < current_node->num_children ; i++){
+        if (*tentative ==0)
+        {
+            printf("GAME OVER (PLUS DE TENTATIVES RESTANTES)\n");
+            exit(0);
+
+        }  
+        if (strcmp(mot_copy , random_word)==0){
+            break;
+        }
         if (children_array_copy[i]->letter == random_word[index]){
             mot_copy[index] = children_array_copy[i]->letter;
             printf("correct guess (%c) : %s\n" ,children_array_copy[i]->letter, mot_copy) ; 
-            guess_rest(children_array_copy[i], random_word, mot_copy, index + 1);
+            guess_rest(children_array_copy[i], random_word, mot_copy, index + 1 ,tentative) ;
         }
         else {
             printf("Incorrect guess (%c) the current word is : %s\n" , children_array_copy[i]->letter , mot_copy);
+            *tentative = *tentative - 1;
         }
 
     }
