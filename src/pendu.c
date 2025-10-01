@@ -1,154 +1,195 @@
 #include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
-#include <time.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
-#define MAX_UNIQUE 256
-#define N 5
+typedef struct Node {
+    char letter;
+    int freq;                  
+    float probability;         
+    int num_children;
+    struct Node **children;
+} Node;
 
-typedef struct prob_pair
-{
-   char lettre ;
-   float probability;
-}Tuple;
+typedef struct MarkovTree {
+    int num_roots;
+    Node **roots;
+} MarkovTree;
 
+Node *create_node(char letter) ;
+Node *find_or_create_child(Node *parent, char letter) ;
+void insert_word(MarkovTree *tree, const char *word) ;
+void compute_probabilities_tree(Node **nodes, int num_nodes, Node *parent) ;
+void print_tree(Node *node, int depth) ;
+void free_tree(Node *node);
 void print_banner(void);
-void prepare_list(char list[][20], int size);
-bool verifier_tentative(char *mot_mystere , char guess , int index);
-int compare_func(const void *a, const void *b) ;
+int compare_root_nodes(const void *a, const void *b) ;
+Node *guess_first_node(Node **roots_copy, int num_roots , char *random_word , char *mot_copy , int *tentative);
 
-void compute_frequencies(char list[][20], int size, float freq_matrix[MAX_UNIQUE][MAX_UNIQUE], int char_freq[MAX_UNIQUE]);
-void compute_probabilities(float freq_matrix[MAX_UNIQUE][MAX_UNIQUE], int char_freq[MAX_UNIQUE], float prob_matrix[MAX_UNIQUE][MAX_UNIQUE]);
+void guess_rest(Node *current_node , char *random_word , char *mot_copy , int index ,  int *tentative);
 
 int main() {
 
+    char *list[] = {
+        "apple", "banana", "cherry", "grapes", "orange",
+        "tiger", "elephant", "sparrow", "dolphin", "lizard",
+        "mountain", "river", "desert", "ocean", "forest",
+        "computer", "keyboard", "screen", "robot", "algorithm",
+        "philosophy", "dream", "memory", "chaos", "harmony",
+        "castle", "village", "bridge", "tunnel", "tower",
+        "guitar", "violin", "drum", "trumpet", "flute",
+        "energy", "gravity", "quantum", "nebula", "galaxy",
+        "sunrise", "thunder", "hurricane", "avalanche", "volcano",
+        "justice", "truth", "illusion", "destiny", "silence"
+    };
+    
+    int N = sizeof(list) / sizeof(list[0]);
     srand(time(NULL));
-    char list[N][20] = {"apple", "banana", "cherry" , "grapes" , "oranges"};
 
     int random_index = rand() % N ;
 
     char *random_word = list[random_index];
+    char *mot_copy = malloc((strlen(random_word) + 1) * sizeof(char));
+
+    printf("The word to guess is : %s\n" , random_word);
     int nombre_tentative = (rand() %  10 ) + strlen(random_word) ;
 
-    printf("%s\n" , random_word);
-    printf("%i\n" , nombre_tentative);
-
-    float prob_matrix[MAX_UNIQUE][MAX_UNIQUE];
-    float freq_matrix[MAX_UNIQUE][MAX_UNIQUE];
-
-    int char_freq[MAX_UNIQUE] ;
-    memset(prob_matrix, 0, sizeof(prob_matrix));
-    memset(freq_matrix, 0, sizeof(freq_matrix));
-    memset(char_freq, 0, sizeof(char_freq));
-
+    MarkovTree tree = {0, NULL};
 
     print_banner();
 
-    prepare_list(list,N );
+    printf("Nombre de tentatives : %d\n" , nombre_tentative);
 
-
-    compute_frequencies(list, N, freq_matrix, char_freq);
-    compute_probabilities(freq_matrix, char_freq, prob_matrix);
-
-
-    for (int i = 0; i < MAX_UNIQUE; i++) {
-        Tuple list_of_prob_for_given_char[MAX_UNIQUE];
-        int count = 0;  
-
-        for (int j = 0; j < MAX_UNIQUE; j++) {
-            if (prob_matrix[i][j] != 0.0f) {
-                list_of_prob_for_given_char[count].lettre = (char)j;  
-                list_of_prob_for_given_char[count].probability = prob_matrix[i][j];
-                count++;
-            }
-        }
-
-        if (count > 0) {
-            qsort(list_of_prob_for_given_char, count, sizeof(Tuple), compare_func);
-
-            printf("Probabilities for '%c':\n", (char)i);
-            for (int k = 0; k < count; k++) {
-                printf("  %c -> %c : %f\n", 
-                    (char)i, 
-                    list_of_prob_for_given_char[k].lettre, 
-                    list_of_prob_for_given_char[k].probability);
-            }
-            printf("\n");
-        }
+    for (int i = 0; i < N; i++) {
+        insert_word(&tree, list[i]);
     }
 
+    compute_probabilities_tree(tree.roots, tree.num_roots, NULL);
+
+    int word_len = strlen(random_word);
+    
+
+    Node **roots_copy = malloc(sizeof(Node) * tree.num_roots);
+    memcpy(roots_copy , tree.roots , tree.num_roots *sizeof(Node) );
+    
+    qsort(roots_copy, tree.num_roots, sizeof(Node*), compare_root_nodes);
+    
+    printf("\nGuessing the word .... \n");
+    
+    Node *first_node =  guess_first_node(roots_copy, tree.num_roots , random_word , mot_copy , &nombre_tentative);
+    free(roots_copy);
+    guess_rest(first_node, random_word , mot_copy ,1 ,  &nombre_tentative);
+   
+    // printf("=== Markov Tree ===\n");
+    // for (int i = 0; i < tree.num_roots; i++) {
+    //     print_tree(tree.roots[i], 0);
+    // }
+    
+    for (int i = 0; i < tree.num_roots; i++) {
+        free_tree(tree.roots[i]);
+    }
+    free(tree.roots);
 
     return 0;
 }
 
-            //     printf("%c is followed by %c with a prob of %f\n",
-            //         i,
-            //         list_of_prob_for_given_char[j].lettre,
-            //         list_of_prob_for_given_char[j].probability);
 
+int compare_root_nodes(const void *a, const void *b) {
+    Node *nodeA = *(Node **)a;
+    Node *nodeB = *(Node **)b;
 
-void compute_frequencies(char list[][20], int size, float freq_matrix[MAX_UNIQUE][MAX_UNIQUE], int char_freq[MAX_UNIQUE]) {
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < strlen(list[i]); j++) {
-            char c = list[i][j];
-            char_freq[c]++;
-            if (j + 1 < strlen(list[i])) {
-                char next_char = list[i][j + 1];
-                freq_matrix[c][next_char]++;
-            }
-        }
-    }
-}
-
-void compute_probabilities(float freq_matrix[MAX_UNIQUE][MAX_UNIQUE], int char_freq[MAX_UNIQUE], float prob_matrix[MAX_UNIQUE][MAX_UNIQUE]) {
-    for (int i = 0; i < MAX_UNIQUE; i++) {
-        for (int j = 0; j < MAX_UNIQUE; j++) {
-            if (freq_matrix[i][j] != 0 && char_freq[i] != 0) {
-                prob_matrix[i][j] = freq_matrix[i][j] / (float)char_freq[i];
-            }
-        }
-    }
-}
-
-
-
-
-
-
-int compare_func(const void *a, const void *b) {
-    Tuple *pa = (Tuple *)a;
-    Tuple *pb = (Tuple *)b;
-
-    if (pa->probability < pb->probability) return 1;   
-    if (pa->probability > pb->probability) return -1;
+    if (nodeA->probability < nodeB->probability) return 1;
+    if (nodeA->probability > nodeB->probability) return -1;
     return 0;
 }
 
 
-bool verifier_tentative(char *mot_mystere , char guess , int index){
+Node *create_node(char letter) {
+    Node *node = malloc(sizeof(Node));
+    node->letter = letter;
+    node->freq = 1;
+    node->probability = 0.0f;
+    node->num_children = 0;
+    node->children = NULL;
+    return node;
+}
 
-    if (mot_mystere[index] == guess){
-        return true;
+Node *find_or_create_child(Node *parent, char letter) {
+    for (int i = 0; i < parent->num_children; i++) {
+        if (parent->children[i]->letter == letter) {
+            parent->children[i]->freq++;
+            return parent->children[i];
+        }
     }
-    else{
-        return false;
+    parent->num_children++;
+    parent->children = realloc(parent->children, parent->num_children * sizeof(Node*));
+    parent->children[parent->num_children-1] = create_node(letter);
+    return parent->children[parent->num_children-1];
+}
+
+void insert_word(MarkovTree *tree, const char *word) {
+
+    char first = word[0];
+    Node *root = NULL;
+    for (int i = 0; i < tree->num_roots; i++) {
+        if (tree->roots[i]->letter == first) {  // si la 1er lettre se trouve dans les roots des mots , just increment the freq
+            root = tree->roots[i];
+            root->freq++;
+            break;
+        }
+    }
+    if (!root) { // si la letter n'est pas dans la list 
+        tree->num_roots++;
+        tree->roots = realloc(tree->roots, tree->num_roots * sizeof(Node*)); // on agrandit la list des noeuds pour ajouter la lettre 
+        root = create_node(first);
+        tree->roots[tree->num_roots-1] = root;
     }
 
+    Node *current = root;
 
+    for (int i = 1; word[i] != '\0'; i++) {
+        current = find_or_create_child(current, word[i]);
+    }
+}
+
+void compute_probabilities_tree(Node **nodes, int num_nodes, Node *parent) {
+    int total = 0;
+
+    if (parent == NULL) {
+        for (int i = 0; i < num_nodes; i++) {
+            total += nodes[i]->freq;
+        }
+    } else {
+        for (int i = 0; i < parent->num_children; i++) {
+            total += parent->children[i]->freq;
+        }
+    }
+
+    for (int i = 0; i < num_nodes; i++) {
+        nodes[i]->probability = (float)nodes[i]->freq / total;
+
+        if (nodes[i]->num_children > 0) {
+            compute_probabilities_tree(nodes[i]->children, nodes[i]->num_children, nodes[i]);
+        }
+    }
 }
 
 
-void prepare_list(char list[][20], int size) {
-    char prepend_char = '0';
+void print_tree(Node *node, int depth) {
+    for (int i = 0; i < depth; i++) printf("  ");
+    printf("'%c' (freq=%d, prob=%.2f)\n", node->letter, node->freq, node->probability);
 
-    for (int i = 0; i < size; i++) {
-        char temp[20];              
-        temp[0] = prepend_char;    
-        temp[1] = '\0';             
-        strcat(temp, list[i]);      
-        strcpy(list[i], temp);      
+    for (int i = 0; i < node->num_children; i++) {
+        print_tree(node->children[i], depth + 1);
     }
+}
+
+void free_tree(Node *node) {
+    for (int i = 0; i < node->num_children; i++) {
+        free_tree(node->children[i]);
+    }
+    free(node->children);
+    free(node);
 }
 
 
@@ -169,4 +210,62 @@ void print_banner(void){
 
     printf("\n");
 
+}
+
+Node *guess_first_node(Node **roots_copy, int num_roots , char *random_word , char *mot_copy , int *tentative){
+
+    for (int i = 0; i < num_roots; i++) {
+        if (*tentative ==0)
+        {
+            printf("GAME OVER (PLUS DE TENTATIVES RESTANTES)\n");
+            exit(0);
+
+        }   
+        if (roots_copy[i]->letter == random_word[0]){
+            mot_copy[0] = roots_copy[i]->letter;
+
+            printf("correct guess (%c) : %s\n" ,roots_copy[i]->letter, mot_copy) ; 
+            return roots_copy[i];
+        }
+        else {
+            printf("Incorrect guess (%c) the current word is : %s\n" , roots_copy[i]->letter , mot_copy);
+            *tentative = *tentative - 1;
+        }
+    }
+}
+
+
+void guess_rest(Node *current_node , char *random_word , char *mot_copy , int index ,  int *tentative){
+
+    if(current_node->num_children ==0){
+        printf("YOU FOUND THE WORD WITH %i ATTEMPTS LEFT : %s \n" ,*tentative, random_word);
+        return ;  // c'est la fin du mot
+    }
+
+    Node **children_array_copy = malloc(sizeof(Node) * current_node->num_children);
+    memcpy(children_array_copy , current_node->children , current_node->num_children *sizeof(Node) );
+
+    qsort(children_array_copy, current_node->num_children, sizeof(Node*), compare_root_nodes);
+
+    for (int i= 0 ; i < current_node->num_children ; i++){
+        if (*tentative ==0)
+        {
+            printf("GAME OVER (PLUS DE TENTATIVES RESTANTES)\n");
+            exit(0);
+
+        }  
+        if (strcmp(mot_copy , random_word)==0){
+            break;
+        }
+        if (children_array_copy[i]->letter == random_word[index]){
+            mot_copy[index] = children_array_copy[i]->letter;
+            printf("correct guess (%c) : %s\n" ,children_array_copy[i]->letter, mot_copy) ; 
+            guess_rest(children_array_copy[i], random_word, mot_copy, index + 1 ,tentative) ;
+        }
+        else {
+            printf("Incorrect guess (%c) the current word is : %s\n" , children_array_copy[i]->letter , mot_copy);
+            *tentative = *tentative - 1;
+        }
+
+    }
 }
