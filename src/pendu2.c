@@ -19,7 +19,7 @@ typedef struct MarkovTree {
 Node *create_node(char letter) ;
 Node *find_or_create_child(Node *parent, char letter) ;
 void insert_word(MarkovTree *tree, const char *word) ;
-void compute_probabilities_tree(Node *node);
+void compute_probabilities_tree(Node **nodes, int num_nodes, Node *parent) ;
 void print_tree(Node *node, int depth) ;
 void free_tree(Node *node);
 void print_banner(void);
@@ -44,15 +44,20 @@ int main() {
         insert_word(&tree, list[i]);
     }
 
-    for (int i = 0; i < tree.num_roots; i++) {
-        compute_probabilities_tree(tree.roots[i]);
-    }
+    compute_probabilities_tree(tree.roots, tree.num_roots, NULL);
+
+    
+
+    
+    
+
+
 
     printf("=== Markov Tree ===\n");
     for (int i = 0; i < tree.num_roots; i++) {
         print_tree(tree.roots[i], 0);
     }
-
+    
     for (int i = 0; i < tree.num_roots; i++) {
         free_tree(tree.roots[i]);
     }
@@ -110,19 +115,28 @@ void insert_word(MarkovTree *tree, const char *word) {
     }
 }
 
-void compute_probabilities_tree(Node *node) {
-    if (node->num_children == 0) return;
-
+void compute_probabilities_tree(Node **nodes, int num_nodes, Node *parent) {
     int total = 0;
-    for (int i = 0; i < node->num_children; i++) {
-        total += node->children[i]->freq;
+
+    if (parent == NULL) {
+        for (int i = 0; i < num_nodes; i++) {
+            total += nodes[i]->freq;
+        }
+    } else {
+        for (int i = 0; i < parent->num_children; i++) {
+            total += parent->children[i]->freq;
+        }
     }
 
-    for (int i = 0; i < node->num_children; i++) {
-        node->children[i]->probability = (float)node->children[i]->freq / total;
-        compute_probabilities_tree(node->children[i]);
+    for (int i = 0; i < num_nodes; i++) {
+        nodes[i]->probability = (float)nodes[i]->freq / total;
+
+        if (nodes[i]->num_children > 0) {
+            compute_probabilities_tree(nodes[i]->children, nodes[i]->num_children, nodes[i]);
+        }
     }
 }
+
 
 void print_tree(Node *node, int depth) {
     for (int i = 0; i < depth; i++) printf("  ");
