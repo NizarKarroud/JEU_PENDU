@@ -23,7 +23,8 @@ void compute_probabilities_tree(Node **nodes, int num_nodes, Node *parent) ;
 void print_tree(Node *node, int depth) ;
 void free_tree(Node *node);
 void print_banner(void);
-
+int compare_root_nodes(const void *a, const void *b) ;
+Node *guess_first_node(Node **roots_copy, int num_roots , char first_letter , char *mot_copy);
 
 
 int main() {
@@ -34,6 +35,9 @@ int main() {
     int random_index = rand() % N ;
 
     char *random_word = list[random_index];
+    char *mot_copy = malloc((strlen(random_word) + 1) * sizeof(char));
+
+    printf("The word to guess is : %s\n" , random_word);
     int nombre_tentative = (rand() %  10 ) + strlen(random_word) ;
 
     MarkovTree tree = {0, NULL};
@@ -46,23 +50,40 @@ int main() {
 
     compute_probabilities_tree(tree.roots, tree.num_roots, NULL);
 
+    int word_len = strlen(random_word);
+    char first_letter = random_word[0];
     
 
+    Node **roots_copy = malloc(sizeof(Node) * tree.num_roots);
+    memcpy(roots_copy , tree.roots , tree.num_roots *sizeof(Node) );
     
+    qsort(roots_copy, tree.num_roots, sizeof(Node*), compare_root_nodes);
     
+    printf("\nGuessing the word .... \n");
+    
+    Node *first_node =  guess_first_node(roots_copy, tree.num_roots , first_letter , mot_copy);
+    free(roots_copy);
 
-
-
-    printf("=== Markov Tree ===\n");
-    for (int i = 0; i < tree.num_roots; i++) {
-        print_tree(tree.roots[i], 0);
-    }
+    // printf("=== Markov Tree ===\n");
+    // for (int i = 0; i < tree.num_roots; i++) {
+    //     print_tree(tree.roots[i], 0);
+    // }
     
     for (int i = 0; i < tree.num_roots; i++) {
         free_tree(tree.roots[i]);
     }
     free(tree.roots);
 
+    return 0;
+}
+
+
+int compare_root_nodes(const void *a, const void *b) {
+    Node *nodeA = *(Node **)a;
+    Node *nodeB = *(Node **)b;
+
+    if (nodeA->probability < nodeB->probability) return 1;
+    if (nodeA->probability > nodeB->probability) return -1;
     return 0;
 }
 
@@ -155,6 +176,19 @@ void free_tree(Node *node) {
     free(node);
 }
 
+Node *guess_first_node(Node **roots_copy, int num_roots , char first_letter , char *mot_copy){
+    for (int i = 0; i < num_roots; i++) {
+        if (roots_copy[i]->letter == first_letter){
+            mot_copy[0] = roots_copy[i]->letter;
+
+            printf("correct guess (%c) : %s\n" ,roots_copy[i]->letter, mot_copy) ; 
+            return roots_copy[i];
+        }
+        else {
+            printf("Incorrect guess (%c) the current word is : %s\n" , roots_copy[i]->letter , mot_copy);
+        }
+    }
+}
 
 void print_banner(void){
 
